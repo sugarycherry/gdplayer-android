@@ -4,12 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -33,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +61,7 @@ import com.gdmusic.player.data.Settings
 import com.gdmusic.player.data.Song
 import com.gdmusic.player.data.Store
 import com.gdmusic.player.player.CoverUrls
+import com.gdmusic.player.player.LyricsCache
 import com.gdmusic.player.player.PlayerConnection
 import com.gdmusic.player.player.PlayerState
 import com.gdmusic.player.ui.components.LyricsView
@@ -80,16 +84,24 @@ fun PlayerScreen(
     val context = LocalContext.current
     val song = state.song
 
-    var showLyrics by remember { mutableStateOf(false) }
+    var showLyrics by rememberSaveable { mutableStateOf(false) }
     var menuExpanded by remember { mutableStateOf(false) }
-    var lyrics by remember { mutableStateOf<List<LyricLine>>(emptyList()) }
+    var lyrics by remember(song?.key) {
+        mutableStateOf(LyricsCache.get(song?.key) ?: emptyList())
+    }
 
     LaunchedEffect(song?.key) {
-        lyrics = emptyList()
-        if (song != null) {
-            val result = MusicApi.lyric(song)
-            lyrics = LrcParser.parse(result?.lrc, result?.translated)
+        val current = song ?: return@LaunchedEffect
+        val cached = LyricsCache.get(current.key)
+        if (cached != null) {
+            lyrics = cached
+            return@LaunchedEffect
         }
+        lyrics = emptyList()
+        val result = MusicApi.lyric(current)
+        val parsed = LrcParser.parse(result?.lrc, result?.translated)
+        LyricsCache.putLines(current.key, parsed)
+        lyrics = parsed
     }
 
     if (song == null) {
@@ -247,28 +259,26 @@ fun PlayerScreen(
                         translationStyle = MaterialTheme.typography.bodySmall
                     )
                 } else {
-                    Column(
-                        Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentAlignment = Alignment.Center
+                    BoxWithConstraints(Modifier.fillMaxSize()) {
+                        val discSize = minOf(maxWidth * 0.82f, maxHeight * 0.66f)
+                        Column(
+                            Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Spacer(Modifier.weight(0.42f))
                             VinylDisc(
                                 song = song,
                                 playing = state.isPlaying,
-                                modifier = Modifier.fillMaxWidth(0.74f)
+                                modifier = Modifier.size(discSize)
                             )
-                        }
-                        if (currentLyric.isNotBlank()) {
+                            Spacer(Modifier.weight(0.28f))
                             Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 6.dp, start = 8.dp, end = 8.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                                    .heightIn(min = 86.dp)
+                                    .padding(horizontal = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
                             ) {
                                 if (prevLyric.isNotBlank()) {
                                     Text(
@@ -282,16 +292,18 @@ fun PlayerScreen(
                                     )
                                     Spacer(Modifier.height(5.dp))
                                 }
-                                Text(
-                                    text = currentLyric,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = onDark,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                    textAlign = TextAlign.Center
-                                )
+                                if (currentLyric.isNotBlank()) {
+                                    Text(
+                                        text = currentLyric,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = onDark,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                                 if (nextLyric.isNotBlank()) {
                                     Spacer(Modifier.height(5.dp))
                                     Text(
