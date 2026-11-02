@@ -30,9 +30,23 @@ fun LyricsView(
     }
 
     LaunchedEffect(activeIndex, lines.size) {
-        if (lines.isNotEmpty()) {
-            listState.animateScrollToItem(activeIndex.coerceIn(0, lines.lastIndex))
+        if (lines.isEmpty()) return@LaunchedEffect
+        val target = activeIndex.coerceIn(0, lines.lastIndex)
+        val layout = listState.layoutInfo
+        val viewport = layout.viewportSize.height
+        if (viewport <= 0) {
+            listState.scrollToItem(target)
+            return@LaunchedEffect
         }
+        val visible = layout.visibleItemsInfo.firstOrNull { it.index == target }
+        val averageSize = layout.visibleItemsInfo
+            .map { it.size }
+            .average()
+            .toInt()
+            .takeIf { it > 0 } ?: 48
+        val itemSize = visible?.size ?: averageSize
+        val offset = itemSize / 2 - viewport / 2
+        listState.animateScrollToItem(target, offset)
     }
 
     LazyColumn(
