@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +18,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 
 @Composable
 fun ThinSeekBar(
@@ -27,7 +29,22 @@ fun ThinSeekBar(
     inactiveColor: Color = Color.White.copy(alpha = 0.28f)
 ) {
     var dragging by remember { mutableStateOf<Float?>(null) }
-    val shown = (dragging ?: progress).coerceIn(0f, 1f)
+    var pending by remember { mutableStateOf<Float?>(null) }
+
+    val shown = (dragging ?: pending ?: progress).coerceIn(0f, 1f)
+
+    LaunchedEffect(pending) {
+        if (pending == null) return@LaunchedEffect
+        delay(1500)
+        pending = null
+    }
+
+    LaunchedEffect(progress) {
+        val target = pending ?: return@LaunchedEffect
+        if (kotlin.math.abs(progress - target) < 0.02f) {
+            pending = null
+        }
+    }
 
     fun positionToProgress(x: Float, width: Float): Float {
         if (width <= 0f) return 0f
@@ -56,6 +73,7 @@ fun ThinSeekBar(
                         dragging = fraction
                         change.consume()
                     }
+                    pending = fraction
                     dragging = null
                     onSeek(fraction)
                 }

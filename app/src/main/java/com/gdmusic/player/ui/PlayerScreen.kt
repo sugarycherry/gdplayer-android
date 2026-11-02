@@ -282,7 +282,7 @@ fun PlayerScreen(
                             Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .heightIn(min = 88.dp)
+                                    .heightIn(min = 112.dp)
                                     .padding(horizontal = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
@@ -291,19 +291,19 @@ fun PlayerScreen(
                                     Text(
                                         text = prevLyric,
                                         style = MaterialTheme.typography.bodySmall,
-                                        fontSize = (13f * blockScale).sp,
+                                        fontSize = (16f * blockScale).sp,
                                         color = onDarkSecondary.copy(alpha = 0.62f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center
                                     )
-                                    Spacer(Modifier.height(6.dp))
+                                    Spacer(Modifier.height(8.dp))
                                 }
                                 if (currentLyric.isNotBlank()) {
                                     Text(
                                         text = currentLyric,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontSize = (17f * blockScale).sp,
+                                        fontSize = (22f * blockScale).sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onDark,
                                         maxLines = 2,
@@ -312,11 +312,11 @@ fun PlayerScreen(
                                     )
                                 }
                                 if (nextLyric.isNotBlank()) {
-                                    Spacer(Modifier.height(6.dp))
+                                    Spacer(Modifier.height(8.dp))
                                     Text(
                                         text = nextLyric,
                                         style = MaterialTheme.typography.bodySmall,
-                                        fontSize = (13f * blockScale).sp,
+                                        fontSize = (16f * blockScale).sp,
                                         color = onDarkSecondary.copy(alpha = 0.62f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
