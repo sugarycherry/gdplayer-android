@@ -100,7 +100,7 @@ object PlayerConnection {
 
     private fun toMediaItem(song: Song, bitrate: Int = currentBitrate()): MediaItem {
         SongRegistry.put(song)
-        val artwork = ArtworkCache.get(song.key)
+        val artworkUrl = CoverUrls.get(song.key)
         return MediaItem.Builder()
             .setMediaId(song.key)
             .setUri(MediaUris.build(song, bitrate))
@@ -110,8 +110,8 @@ object PlayerConnection {
                     .setArtist(song.displayArtist)
                     .setAlbumTitle(song.album)
                     .apply {
-                        if (artwork != null) {
-                            setArtworkData(artwork, MediaMetadata.PICTURE_TYPE_FRONT_COVER)
+                        if (!artworkUrl.isNullOrBlank()) {
+                            setArtworkUri(android.net.Uri.parse(artworkUrl))
                         }
                     }
                     .build()
@@ -183,9 +183,9 @@ object PlayerConnection {
             for (offset in 0 until 3) {
                 val index = from + offset
                 val song = queue.getOrNull(index) ?: continue
-                if (ArtworkCache.has(song.key)) continue
-                val bytes = MusicApi.loadArtwork(song) ?: continue
-                ArtworkCache.put(song.key, bytes)
+                if (CoverUrls.get(song.key) != null) continue
+                val url = MusicApi.coverUrl(song) ?: continue
+                CoverUrls.put(song.key, url)
                 val c = controller ?: return@launch
                 if (index >= c.mediaItemCount) continue
                 if (index == c.currentMediaItemIndex) continue
@@ -271,22 +271,6 @@ object PlayerConnection {
         c.seekTo(index, position)
         if (wasPlaying) c.play()
     }
-}
-
-object ArtworkCache {
-
-    private val map = object : LinkedHashMap<String, ByteArray>(8, 0.75f, true) {
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ByteArray>?): Boolean =
-            size > 12
-    }
-
-    fun put(key: String, bytes: ByteArray) {
-        map[key] = bytes
-    }
-
-    fun get(key: String): ByteArray? = map[key]
-
-    fun has(key: String): Boolean = map.containsKey(key)
 }
 
 object CoverUrls {

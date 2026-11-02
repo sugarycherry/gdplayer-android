@@ -40,7 +40,14 @@ data class LyricLine(
 data class UserPlaylist(
     val id: String = "",
     val name: String = "",
-    val songs: List<Song> = emptyList()
+    val songs: List<Song> = emptyList(),
+    val source: String = "local",
+    val sourceId: String = ""
+)
+
+data class PlaylistDetail(
+    val name: String,
+    val songs: List<Song>
 )
 
 data class Settings(

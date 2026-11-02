@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -37,10 +39,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.gdmusic.player.BuildConfig
 import com.gdmusic.player.data.Quality
 import com.gdmusic.player.data.Settings
 import com.gdmusic.player.data.Song
 import com.gdmusic.player.data.Store
+import com.gdmusic.player.data.UpdateChecker
+import com.gdmusic.player.data.UpdateInfo
 import com.gdmusic.player.download.Downloader
 import com.gdmusic.player.player.PlayerConnection
 import com.gdmusic.player.ui.components.AddToPlaylistDialog
@@ -59,10 +64,28 @@ fun AppRoot() {
     var playerOpen by rememberSaveable { mutableStateOf(false) }
     var settingsOpen by remember { mutableStateOf(false) }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
+    var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var checkingUpdate by remember { mutableStateOf(false) }
 
     fun toast(message: String) {
         scope.launch { snackbarHostState.showSnackbar(message) }
     }
+
+    fun checkUpdate(silent: Boolean) {
+        if (checkingUpdate) return
+        checkingUpdate = true
+        scope.launch {
+            val info = UpdateChecker.latest()
+            checkingUpdate = false
+            when {
+                info == null -> if (!silent) toast("检查更新失败，请检查网络")
+                UpdateChecker.isNewer(info.version, BuildConfig.APP_VERSION) -> updateInfo = info
+                else -> if (!silent) toast("已是最新版本 ${BuildConfig.APP_VERSION}")
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) { checkUpdate(silent = true) }
 
     fun startDownload(song: Song) {
         scope.launch {
@@ -162,7 +185,20 @@ fun AppRoot() {
         SettingsDialog(
             settings = library.settings,
             onDismiss = { settingsOpen = false },
-            onSave = { Store.saveSettings(it) }
+            onSave = { Store.saveSettings(it) },
+            onCheckUpdate = {
+                settingsOpen = false
+                checkUpdate(silent = false)
+            }
+        )
+    }
+
+    updateInfo?.let { info ->
+        UpdateDialog(
+            info = info,
+            currentVersion = BuildConfig.APP_VERSION,
+            onDismiss = { updateInfo = null },
+            onToast = { toast(it) }
         )
     }
 
@@ -188,7 +224,8 @@ fun AppRoot() {
 private fun SettingsDialog(
     settings: Settings,
     onDismiss: () -> Unit,
-    onSave: (Settings) -> Unit
+    onSave: (Settings) -> Unit,
+    onCheckUpdate: () -> Unit
 ) {
     var local by remember { mutableStateOf(settings) }
 
@@ -218,6 +255,20 @@ private fun SettingsDialog(
                 }
                 SettingSwitch("深色主题", local.darkTheme) {
                     local = local.copy(darkTheme = it)
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = "当前版本 ${BuildConfig.APP_VERSION}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                TextButton(
+                    onClick = {
+                        onSave(local)
+                        onCheckUpdate()
+                    }
+                ) {
+                    Text("检查更新")
                 }
             }
         },

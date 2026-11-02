@@ -79,6 +79,28 @@ object Store {
         return playlist
     }
 
+    fun importPlaylist(name: String, songs: List<Song>, sourceId: String): UserPlaylist {
+        val current = _state.value
+        val existing = current.playlists.firstOrNull {
+            it.source == "netease" && it.sourceId == sourceId
+        }
+        val playlist = existing?.copy(name = name, songs = songs)
+            ?: UserPlaylist(
+                id = UUID.randomUUID().toString(),
+                name = name,
+                songs = songs,
+                source = "netease",
+                sourceId = sourceId
+            )
+        val playlists = if (existing == null) {
+            current.playlists + playlist
+        } else {
+            current.playlists.map { if (it.id == existing.id) playlist else it }
+        }
+        commit(current.copy(playlists = playlists))
+        return playlist
+    }
+
     fun deletePlaylist(id: String) {
         val current = _state.value
         commit(current.copy(playlists = current.playlists.filterNot { it.id == id }))

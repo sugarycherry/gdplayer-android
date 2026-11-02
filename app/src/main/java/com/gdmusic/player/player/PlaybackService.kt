@@ -50,6 +50,7 @@ class PlaybackService : MediaSessionService() {
 
         session = MediaSession.Builder(this, player)
             .apply { pendingIntent?.let { setSessionActivity(it) } }
+            .setBitmapLoader(androidx.media3.datasource.DataSourceBitmapLoader(this))
             .build()
     }
 

@@ -81,13 +81,17 @@ object MusicApi {
         parseSongArray(raw, source)
     }
 
-    suspend fun playlist(id: String): List<Song> = withContext(Dispatchers.IO) {
-        val raw = get(url("types" to "playlist", "id" to id)) ?: return@withContext emptyList()
+    suspend fun playlist(id: String): List<Song> = playlistDetail(id)?.songs ?: emptyList()
+
+    suspend fun playlistDetail(id: String): PlaylistDetail? = withContext(Dispatchers.IO) {
+        val raw = get(url("types" to "playlist", "id" to id)) ?: return@withContext null
         try {
             val root = JsonParser.parseString(raw).asJsonObject
-            val playlist = root.getAsJsonObject("playlist") ?: return@withContext emptyList()
-            val tracks = playlist.getAsJsonArray("tracks") ?: return@withContext emptyList()
-            tracks.mapNotNull { element ->
+            val playlist = root.getAsJsonObject("playlist") ?: return@withContext null
+            val name = playlist.get("name")?.takeIf { !it.isJsonNull }?.asString
+                ?: return@withContext null
+            val tracks = playlist.getAsJsonArray("tracks") ?: return@withContext PlaylistDetail(name, emptyList())
+            val songs = tracks.mapNotNull { element ->
                 val track = element as? JsonObject ?: return@mapNotNull null
                 val artists = track.getAsJsonArray("ar")?.joinToString("/") {
                     it.asJsonObject.get("name")?.asString ?: ""
@@ -105,12 +109,13 @@ object MusicApi {
                     picId = picUrl ?: trackId,
                     lyricId = trackId,
                     durationMs = (track.get("dt")?.asLong ?: 0L),
-                    coverUrl = picUrl,
+                    coverUrl = picUrl?.let { normalize(it) },
                     hasHiRes = false
                 )
             }
+            PlaylistDetail(name, songs)
         } catch (e: Exception) {
-            emptyList()
+            null
         }
     }
 
@@ -238,23 +243,6 @@ object MusicApi {
             }
         } catch (e: Exception) {
             emptyList()
-        }
-    }
-
-    suspend fun loadArtwork(song: Song, size: Int = 400): ByteArray? = withContext(Dispatchers.IO) {
-        val url = coverUrl(song, size) ?: return@withContext null
-        try {
-            val request = Request.Builder()
-                .url(url)
-                .header("User-Agent", USER_AGENT)
-                .build()
-            client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext null
-                val bytes = response.body?.bytes() ?: return@withContext null
-                if (bytes.size > 2_000_000) null else bytes
-            }
-        } catch (e: Exception) {
-            null
         }
     }
 
