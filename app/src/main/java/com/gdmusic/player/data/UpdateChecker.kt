@@ -55,10 +55,14 @@ object UpdateChecker {
 
         try {
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) return@withContext null
+                if (!response.isSuccessful) {
+                    android.util.Log.w("GDPlayer", "update check http ${response.code}")
+                    return@withContext null
+                }
                 val body = response.body?.string() ?: return@withContext null
                 val json = JsonParser.parseString(body).asJsonObject
                 val tag = json.get("tag_name")?.asString ?: return@withContext null
+                android.util.Log.d("GDPlayer", "update check: latest=$tag")
                 val notes = json.get("body")?.asString ?: ""
                 val page = json.get("html_url")?.asString ?: ""
 
@@ -79,6 +83,7 @@ object UpdateChecker {
                 )
             }
         } catch (e: Exception) {
+            android.util.Log.w("GDPlayer", "update check failed", e)
             null
         }
     }

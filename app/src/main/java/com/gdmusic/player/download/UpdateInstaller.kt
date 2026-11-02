@@ -77,6 +77,7 @@ object UpdateInstaller {
                     target.delete()
                     return@withContext null
                 }
+                android.util.Log.d("GDPlayer", "update downloaded: ${target.name} ${target.length()} bytes")
                 onProgress(100)
                 target
             }
@@ -86,9 +87,10 @@ object UpdateInstaller {
     }
 
     fun install(context: Context, file: File) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            !context.packageManager.canRequestPackageInstalls()
-        ) {
+        val canInstall = Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+            context.packageManager.canRequestPackageInstalls()
+        android.util.Log.d("GDPlayer", "install requested: ${file.name} canInstall=$canInstall")
+        if (!canInstall) {
             val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
                 .setData(Uri.parse("package:${context.packageName}"))
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -105,8 +107,10 @@ object UpdateInstaller {
             .setDataAndType(uri, "application/vnd.android.package-archive")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
+            android.util.Log.d("GDPlayer", "install: launching installer for $uri")
             context.startActivity(intent)
         } catch (e: Exception) {
+            android.util.Log.w("GDPlayer", "install failed", e)
             throw IOException("无法打开安装器")
         }
     }
