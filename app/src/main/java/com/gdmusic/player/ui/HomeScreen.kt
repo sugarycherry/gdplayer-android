@@ -56,6 +56,8 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     settings: Settings,
     currentSongKey: String?,
+    pendingSearch: String?,
+    onSearchConsumed: () -> Unit,
     onSourceChange: (String) -> Unit,
     onOpenSettings: () -> Unit,
     onPlay: (List<Song>, Int) -> Unit,
@@ -92,9 +94,17 @@ fun HomeScreen(
         loading = true
         scope.launch {
             val nextPage = if (reset) 1 else page + 1
-            val list = MusicApi.search(settings.source, query, nextPage, 30)
+            var list = MusicApi.search(settings.source, query, nextPage, 30)
+            if (list == null) {
+                kotlinx.coroutines.delay(800)
+                list = MusicApi.search(settings.source, query, nextPage, 30)
+            }
             if (list == null) {
                 loading = false
+                if (reset) {
+                    results = emptyList()
+                    listTitle = "「$query」搜索失败，请重试"
+                }
                 onToast("搜索失败，请稍后重试")
                 return@launch
             }
@@ -114,6 +124,14 @@ fun HomeScreen(
 
     LaunchedEffect(Unit) {
         if (results.isEmpty()) loadHot()
+    }
+
+    LaunchedEffect(pendingSearch) {
+        val keyword = pendingSearch
+        if (keyword.isNullOrBlank()) return@LaunchedEffect
+        query = keyword
+        search(reset = true)
+        onSearchConsumed()
     }
 
     LaunchedEffect(query, settings.source) {

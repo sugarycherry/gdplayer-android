@@ -224,18 +224,31 @@ object PlayerConnection {
         if (index in 0 until c.mediaItemCount) c.seekTo(index, 0L)
     }
 
-    fun toggleShuffle() {
-        controller?.let { it.shuffleModeEnabled = !it.shuffleModeEnabled }
-    }
-
-    fun cycleRepeat() {
-        controller?.let {
-            it.repeatMode = when (it.repeatMode) {
-                Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
-                Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
-                else -> Player.REPEAT_MODE_OFF
+    fun cyclePlayMode(): String {
+        val c = controller ?: return "列表循环"
+        val mode = when {
+            c.repeatMode == Player.REPEAT_MODE_ONE -> 2
+            c.shuffleModeEnabled -> 1
+            else -> 0
+        }
+        val next = when (mode) {
+            0 -> {
+                c.shuffleModeEnabled = true
+                c.repeatMode = Player.REPEAT_MODE_ALL
+                "随机播放"
+            }
+            1 -> {
+                c.shuffleModeEnabled = false
+                c.repeatMode = Player.REPEAT_MODE_ONE
+                "单曲循环"
+            }
+            else -> {
+                c.shuffleModeEnabled = false
+                c.repeatMode = Player.REPEAT_MODE_ALL
+                "列表循环"
             }
         }
+        return next
     }
 
     fun playNext(song: Song) {

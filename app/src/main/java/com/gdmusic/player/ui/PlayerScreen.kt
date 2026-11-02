@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,7 +70,9 @@ fun PlayerScreen(
     onClose: () -> Unit,
     onQualityChange: (Int) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
-    onDownload: (Song) -> Unit
+    onDownload: (Song) -> Unit,
+    onSearchArtist: (String) -> Unit,
+    onToast: (String) -> Unit
 ) {
     val library by Store.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -158,10 +161,6 @@ fun PlayerScreen(
                             text = { Text("下载") },
                             onClick = { menuExpanded = false; onDownload(song) }
                         )
-                        DropdownMenuItem(
-                            text = { Text("播放队列") },
-                            onClick = { menuExpanded = false; queueExpanded = true }
-                        )
                     }
                 }
             }
@@ -191,13 +190,29 @@ fun PlayerScreen(
             }
 
             Spacer(Modifier.height(12.dp))
-            Text(
-                text = song.name,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = song.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .clickable { queueExpanded = true }
+                )
+                Spacer(Modifier.width(8.dp))
+                IconButton(onClick = { queueExpanded = true }) {
+                    Icon(
+                        AppIcons.QueueMusic,
+                        contentDescription = "播放列表",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -205,16 +220,18 @@ fun PlayerScreen(
                 Text(
                     text = song.displayArtist,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable {
+                            val keyword = song.artist.substringBefore("/").trim()
+                                .ifBlank { song.displayArtist }
+                            onSearchArtist(keyword)
+                        },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                IconButton(
-                    onClick = {
-                        Store.toggleFavorite(song)
-                    }
-                ) {
+                IconButton(onClick = { Store.toggleFavorite(song) }) {
                     val isFavorite = library.favorites.any { it.key == song.key }
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
@@ -262,12 +279,18 @@ fun PlayerScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { PlayerConnection.toggleShuffle() }) {
+                IconButton(onClick = {
+                    onToast(PlayerConnection.cyclePlayMode())
+                }) {
+                    val modeIcon = when {
+                        state.repeatMode == Player.REPEAT_MODE_ONE -> AppIcons.RepeatOne
+                        state.shuffle -> AppIcons.Shuffle
+                        else -> AppIcons.Repeat
+                    }
                     Icon(
-                        AppIcons.Shuffle,
-                        contentDescription = "随机播放",
-                        tint = if (state.shuffle) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onSurfaceVariant
+                        modeIcon,
+                        contentDescription = "播放模式",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
                 IconButton(onClick = { PlayerConnection.previous() }) {
@@ -286,17 +309,11 @@ fun PlayerScreen(
                 IconButton(onClick = { PlayerConnection.next() }) {
                     Icon(AppIcons.SkipNext, contentDescription = "下一首", modifier = Modifier.size(34.dp))
                 }
-                IconButton(onClick = { PlayerConnection.cycleRepeat() }) {
+                IconButton(onClick = { queueExpanded = true }) {
                     Icon(
-                        imageVector = when (state.repeatMode) {
-                            Player.REPEAT_MODE_ONE -> AppIcons.RepeatOne
-                            Player.REPEAT_MODE_ALL -> AppIcons.Repeat
-                            else -> AppIcons.Repeat
-                        },
-                        contentDescription = "循环模式",
-                        tint = if (state.repeatMode == Player.REPEAT_MODE_OFF)
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.primary
+                        AppIcons.QueueMusic,
+                        contentDescription = "播放列表",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

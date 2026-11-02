@@ -66,6 +66,7 @@ fun AppRoot() {
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var checkingUpdate by remember { mutableStateOf(false) }
+    var pendingSearch by remember { mutableStateOf<String?>(null) }
 
     fun toast(message: String) {
         scope.launch { snackbarHostState.showSnackbar(message) }
@@ -135,6 +136,8 @@ fun AppRoot() {
                 0 -> HomeScreen(
                     settings = library.settings,
                     currentSongKey = playerState.song?.key,
+                    pendingSearch = pendingSearch,
+                    onSearchConsumed = { pendingSearch = null },
                     onSourceChange = {
                         Store.saveSettings(library.settings.copy(source = it))
                     },
@@ -177,7 +180,13 @@ fun AppRoot() {
                 toast("已切换到 ${Quality.label(bitrate)}")
             },
             onAddToPlaylist = { playlistTarget = it },
-            onDownload = { startDownload(it) }
+            onDownload = { startDownload(it) },
+            onSearchArtist = { artist ->
+                pendingSearch = artist
+                playerOpen = false
+                tab = 0
+            },
+            onToast = { toast(it) }
         )
     }
 
