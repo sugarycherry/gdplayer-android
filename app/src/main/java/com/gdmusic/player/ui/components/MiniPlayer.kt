@@ -45,7 +45,7 @@ fun MiniPlayer(
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 3.dp,
+        tonalElevation = 0.dp,
         modifier = modifier.fillMaxWidth()
     ) {
         Column(Modifier.clickable(onClick = onClick)) {
@@ -94,9 +94,9 @@ fun MiniPlayer(
                 progress = { animated },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(2.dp),
+                    .height(1.dp),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
+                trackColor = MaterialTheme.colorScheme.outlineVariant
             )
         }
     }

@@ -191,10 +191,23 @@ fun HomeScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             MusicSources.supported.forEach { option ->
+                val selected = settings.source == option.key
                 FilterChip(
-                    selected = settings.source == option.key,
+                    selected = selected,
                     onClick = { onSourceChange(option.key) },
-                    label = { Text(option.label) }
+                    label = { Text(option.label) },
+                    colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        selectedContainerColor = MaterialTheme.colorScheme.surface,
+                        selectedLabelColor = MaterialTheme.colorScheme.primary
+                    ),
+                    border = androidx.compose.material3.FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = selected,
+                        borderColor = MaterialTheme.colorScheme.outline,
+                        selectedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             }
         }

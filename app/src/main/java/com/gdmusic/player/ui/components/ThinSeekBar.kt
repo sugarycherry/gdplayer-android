@@ -61,8 +61,8 @@ fun ThinSeekBar(
                 }
             }
     ) {
-        val lineHeight = 3.dp.toPx()
-        val dotRadius = 5.dp.toPx()
+        val lineHeight = 1.5.dp.toPx()
+        val dotRadius = 4.dp.toPx()
         val centerY = size.height / 2f
         val startX = dotRadius
         val endX = size.width - dotRadius

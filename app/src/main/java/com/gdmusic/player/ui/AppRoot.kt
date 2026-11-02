@@ -140,7 +140,7 @@ fun AppRoot() {
                 }
                 Surface(
                     color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 2.dp,
+                    tonalElevation = 0.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(

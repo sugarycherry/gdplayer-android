@@ -77,11 +77,5 @@ fun VinylDisc(
             modifier = Modifier.fillMaxSize(0.63f),
             shape = CircleShape
         )
-        Box(
-            Modifier
-                .size(10.dp)
-                .clip(CircleShape)
-                .background(Color(0xFF0B0B0C))
-        )
     }
 }

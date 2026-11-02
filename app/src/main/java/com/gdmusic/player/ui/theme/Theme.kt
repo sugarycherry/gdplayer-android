@@ -27,15 +27,23 @@ private val DarkColors = darkColorScheme(
 private val LightColors = lightColorScheme(
     primary = NeteaseRed,
     onPrimary = Color.White,
+    primaryContainer = Color.White,
+    onPrimaryContainer = NeteaseRed,
     secondary = Color(0xFF7A5C5A),
     onSecondary = Color.White,
-    background = Color(0xFFF7F7F8),
+    secondaryContainer = Color.White,
+    onSecondaryContainer = Color(0xFF18181A),
+    background = Color.White,
     onBackground = Color(0xFF18181A),
     surface = Color.White,
     onSurface = Color(0xFF18181A),
-    surfaceVariant = Color(0xFFF0F0F2),
+    surfaceVariant = Color(0xFFF4F4F6),
     onSurfaceVariant = Color(0xFF5A5A61),
-    outline = Color(0xFFC8C8CE)
+    surfaceContainer = Color.White,
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color.White,
+    outline = Color(0xFFDCDCE1),
+    outlineVariant = Color(0xFFEDEDF0)
 )
 
 @Composable

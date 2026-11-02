@@ -29,6 +29,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -70,6 +71,13 @@ fun LibraryScreen(
     var importText by remember { mutableStateOf("") }
     var importLoading by remember { mutableStateOf(false) }
 
+    val importedPlaylist = library.playlists.firstOrNull { it.source == "netease" }
+    LaunchedEffect(importedPlaylist?.id) {
+        if (openedId == null && importedPlaylist != null) {
+            openedId = importedPlaylist.id
+        }
+    }
+
     val opened = library.playlists.firstOrNull { it.id == openedId }
 
     if (opened != null) {
@@ -91,12 +99,12 @@ fun LibraryScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
+                .padding(start = 20.dp, end = 8.dp, top = 10.dp, bottom = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "我的音乐",
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
             )
@@ -104,20 +112,36 @@ fun LibraryScreen(
                 TextButton(onClick = { Store.clearHistory() }) { Text("清空历史") }
             }
             if (tab == 2) {
-                IconButton(onClick = { importing = true }) {
-                    Icon(AppIcons.Download, contentDescription = "导入歌单")
+                IconButton(onClick = { importing = true }, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        AppIcons.Download,
+                        contentDescription = "导入歌单",
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
-                IconButton(onClick = { creating = true }) {
-                    Icon(Icons.Filled.Add, contentDescription = "新建歌单")
+                IconButton(onClick = { creating = true }, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = "新建歌单",
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
         }
 
-        TabRow(selectedTabIndex = tab) {
+        TabRow(
+            selectedTabIndex = tab,
+            containerColor = MaterialTheme.colorScheme.surface
+        ) {
             tabTitles.forEachIndexed { index, title ->
-                Tab(selected = tab == index, onClick = { tab = index }) {
-                    Box(Modifier.padding(vertical = 14.dp)) { Text(title) }
-                }
+                Tab(
+                    selected = tab == index,
+                    onClick = { tab = index },
+                    modifier = Modifier.height(38.dp),
+                    text = {
+                        Text(title, style = MaterialTheme.typography.labelLarge)
+                    }
+                )
             }
         }
 

@@ -114,8 +114,16 @@ fun PlayerScreen(
     val coverUrl = CoverUrls.get(song.key) ?: song.coverUrl
     val onDark = Color.White
     val onDarkSecondary = Color.White.copy(alpha = 0.72f)
+    val silentInteraction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
 
-    Box(Modifier.fillMaxSize()) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = silentInteraction,
+                indication = null
+            ) { }
+    ) {
         if (!coverUrl.isNullOrBlank()) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -212,11 +220,19 @@ fun PlayerScreen(
                 }
             }
 
+            val lyricIndex = if (lyrics.isEmpty()) -1
+            else lyrics.indexOfLast { it.timeMs <= state.positionMs }
+            val currentLyric = lyrics.getOrNull(lyricIndex)?.text.orEmpty()
+            val nextLyric = lyrics.getOrNull(lyricIndex + 1)?.text.orEmpty()
+
             Box(
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clickable { showLyrics = !showLyrics },
+                    .clickable(
+                        interactionSource = silentInteraction,
+                        indication = null
+                    ) { showLyrics = !showLyrics },
                 contentAlignment = Alignment.Center
             ) {
                 if (showLyrics && lyrics.isNotEmpty()) {
@@ -230,11 +246,52 @@ fun PlayerScreen(
                         translationStyle = MaterialTheme.typography.bodySmall
                     )
                 } else {
-                    VinylDisc(
-                        song = song,
-                        playing = state.isPlaying,
-                        modifier = Modifier.fillMaxWidth(0.74f)
-                    )
+                    Column(
+                        Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            VinylDisc(
+                                song = song,
+                                playing = state.isPlaying,
+                                modifier = Modifier.fillMaxWidth(0.74f)
+                            )
+                        }
+                        if (currentLyric.isNotBlank()) {
+                            Column(
+                                Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 14.dp, start = 8.dp, end = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = currentLyric,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = onDark,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    textAlign = TextAlign.Center
+                                )
+                                if (nextLyric.isNotBlank()) {
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        text = nextLyric,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = onDarkSecondary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -243,9 +300,9 @@ fun PlayerScreen(
             Box(Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .padding(horizontal = 52.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .align(Alignment.CenterStart)
+                        .padding(end = 52.dp),
+                    horizontalAlignment = Alignment.Start
                 ) {
                     Text(
                         text = song.name,
@@ -254,24 +311,20 @@ fun PlayerScreen(
                         color = onDark,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .clickable { onOpenQueue() }
-                            .padding(horizontal = 8.dp)
+                        modifier = Modifier.clickable { onOpenQueue() }
                     )
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(3.dp))
                     Text(
                         text = song.displayArtist,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = onDarkSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .clickable {
-                                val keyword = song.artist.substringBefore("/").trim()
-                                    .ifBlank { song.displayArtist }
-                                onSearchArtist(keyword)
-                            }
-                            .padding(horizontal = 8.dp)
+                        modifier = Modifier.clickable {
+                            val keyword = song.artist.substringBefore("/").trim()
+                                .ifBlank { song.displayArtist }
+                            onSearchArtist(keyword)
+                        }
                     )
                 }
                 IconButton(
