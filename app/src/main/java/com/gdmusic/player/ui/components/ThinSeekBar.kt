@@ -1,8 +1,8 @@
 package com.gdmusic.player.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -40,24 +40,24 @@ fun ThinSeekBar(
             .fillMaxWidth()
             .height(34.dp)
             .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        dragging = positionToProgress(offset.x, size.width.toFloat())
-                    },
-                    onDrag = { change, _ ->
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    down.consume()
+                    var fraction = positionToProgress(down.position.x, size.width.toFloat())
+                    dragging = fraction
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) {
+                            change.consume()
+                            break
+                        }
+                        fraction = positionToProgress(change.position.x, size.width.toFloat())
+                        dragging = fraction
                         change.consume()
-                        dragging = positionToProgress(change.position.x, size.width.toFloat())
-                    },
-                    onDragEnd = {
-                        dragging?.let { onSeek(it) }
-                        dragging = null
-                    },
-                    onDragCancel = { dragging = null }
-                )
-            }
-            .pointerInput(Unit) {
-                detectTapGestures { offset ->
-                    onSeek(positionToProgress(offset.x, size.width.toFloat()))
+                    }
+                    dragging = null
+                    onSeek(fraction)
                 }
             }
     ) {

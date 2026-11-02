@@ -27,6 +27,7 @@ import java.util.ArrayDeque
 data class PlayerState(
     val connected: Boolean = false,
     val isPlaying: Boolean = false,
+    val shouldPlay: Boolean = false,
     val isBuffering: Boolean = false,
     val song: Song? = null,
     val queue: List<Song> = emptyList(),
@@ -133,6 +134,7 @@ object PlayerConnection {
         _state.value = _state.value.copy(
             connected = true,
             isPlaying = c.isPlaying,
+            shouldPlay = c.playWhenReady,
             isBuffering = c.playbackState == Player.STATE_BUFFERING,
             song = song,
             queue = queue,
