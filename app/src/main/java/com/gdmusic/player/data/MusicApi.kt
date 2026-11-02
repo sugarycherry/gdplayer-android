@@ -26,6 +26,14 @@ object MusicApi {
 
     private val coverSemaphore = kotlinx.coroutines.sync.Semaphore(2)
 
+    private const val SEARCH_CACHE_TTL_MS = 10 * 60 * 1000L
+
+    private val searchCache = object : LinkedHashMap<String, Pair<Long, List<Song>>>(8, 0.75f, true) {
+        override fun removeEldestEntry(
+            eldest: MutableMap.MutableEntry<String, Pair<Long, List<Song>>>?
+        ): Boolean = size > 24
+    }
+
     private val coverCache = object : LinkedHashMap<String, String>(32, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>?): Boolean =
             size > 200
@@ -69,6 +77,14 @@ object MusicApi {
         page: Int = 1,
         count: Int = 30
     ): List<Song>? = withContext(Dispatchers.IO) {
+        val cacheKey = "$source|$keyword|$page|$count"
+        searchCache[cacheKey]?.let { (cachedAt, songs) ->
+            if (System.currentTimeMillis() - cachedAt < SEARCH_CACHE_TTL_MS) {
+                return@withContext songs
+            }
+            searchCache.remove(cacheKey)
+        }
+
         val raw = get(
             url(
                 "types" to "search",
@@ -78,7 +94,12 @@ object MusicApi {
                 "pages" to page.toString()
             )
         ) ?: return@withContext null
-        parseSongArray(raw, source)
+
+        val songs = parseSongArray(raw, source)
+        if (songs.isNotEmpty()) {
+            searchCache[cacheKey] = System.currentTimeMillis() to songs
+        }
+        songs
     }
 
     suspend fun playlist(id: String): List<Song> = playlistDetail(id)?.songs ?: emptyList()

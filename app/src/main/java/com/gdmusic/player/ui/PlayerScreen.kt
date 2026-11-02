@@ -15,12 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
@@ -32,7 +28,6 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -72,6 +67,7 @@ fun PlayerScreen(
     onAddToPlaylist: (Song) -> Unit,
     onDownload: (Song) -> Unit,
     onSearchArtist: (String) -> Unit,
+    onOpenQueue: () -> Unit,
     onToast: (String) -> Unit
 ) {
     val library by Store.state.collectAsState()
@@ -80,7 +76,6 @@ fun PlayerScreen(
 
     var showLyrics by remember { mutableStateOf(true) }
     var menuExpanded by remember { mutableStateOf(false) }
-    var queueExpanded by remember { mutableStateOf(false) }
     var dragging by remember { mutableStateOf(false) }
     var dragValue by remember { mutableFloatStateOf(0f) }
     var lyrics by remember { mutableStateOf<List<LyricLine>>(emptyList()) }
@@ -201,17 +196,9 @@ fun PlayerScreen(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
-                        .weight(1f, fill = false)
-                        .clickable { queueExpanded = true }
+                        .weight(1f)
+                        .clickable { onOpenQueue() }
                 )
-                Spacer(Modifier.width(8.dp))
-                IconButton(onClick = { queueExpanded = true }) {
-                    Icon(
-                        AppIcons.QueueMusic,
-                        contentDescription = "播放列表",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
             Row(
                 Modifier.fillMaxWidth(),
@@ -309,7 +296,7 @@ fun PlayerScreen(
                 IconButton(onClick = { PlayerConnection.next() }) {
                     Icon(AppIcons.SkipNext, contentDescription = "下一首", modifier = Modifier.size(34.dp))
                 }
-                IconButton(onClick = { queueExpanded = true }) {
+                IconButton(onClick = { onOpenQueue() }) {
                     Icon(
                         AppIcons.QueueMusic,
                         contentDescription = "播放列表",
@@ -318,54 +305,6 @@ fun PlayerScreen(
                 }
             }
             Spacer(Modifier.height(8.dp))
-        }
-    }
-
-    if (queueExpanded) {
-        ModalBottomSheet(onDismissRequest = { queueExpanded = false }) {
-            Text(
-                text = "播放队列（${state.queue.size}）",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
-            )
-            LazyColumn(Modifier.fillMaxWidth()) {
-                itemsIndexed(state.queue) { index, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                PlayerConnection.seekToQueueItem(index)
-                                queueExpanded = false
-                            }
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                item.name,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = if (index == state.index) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                item.displayArtist,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        IconButton(onClick = { PlayerConnection.removeFromQueue(index) }) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = "移除",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }

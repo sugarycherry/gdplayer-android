@@ -67,6 +67,7 @@ fun AppRoot() {
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
     var checkingUpdate by remember { mutableStateOf(false) }
     var pendingSearch by remember { mutableStateOf<String?>(null) }
+    var queueOpen by remember { mutableStateOf(false) }
 
     fun toast(message: String) {
         scope.launch { snackbarHostState.showSnackbar(message) }
@@ -96,7 +97,7 @@ fun AppRoot() {
         }
     }
 
-    BackHandler(enabled = playerOpen) { playerOpen = false }
+    BackHandler(enabled = playerOpen && !queueOpen) { playerOpen = false }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -185,9 +186,23 @@ fun AppRoot() {
             onSearchArtist = { artist ->
                 pendingSearch = artist
                 playerOpen = false
+                queueOpen = false
                 tab = 0
             },
+            onOpenQueue = { queueOpen = true },
             onToast = { toast(it) }
+        )
+    }
+
+    if (queueOpen) {
+        QueueScreen(
+            state = playerState,
+            onBack = { queueOpen = false },
+            onSelect = { index ->
+                PlayerConnection.seekToQueueItem(index)
+                queueOpen = false
+            },
+            onRemove = { PlayerConnection.removeFromQueue(it) }
         )
     }
 

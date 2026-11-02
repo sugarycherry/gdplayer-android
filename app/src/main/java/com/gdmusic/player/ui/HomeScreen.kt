@@ -91,6 +91,10 @@ fun HomeScreen(
 
     fun search(reset: Boolean) {
         if (query.isBlank()) return
+        if (reset) {
+            results = emptyList()
+            listTitle = "正在搜索「$query」…"
+        }
         loading = true
         scope.launch {
             val nextPage = if (reset) 1 else page + 1
