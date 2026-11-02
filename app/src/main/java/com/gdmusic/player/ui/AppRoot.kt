@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -151,12 +152,14 @@ fun AppRoot() {
             }
         }
     ) { padding ->
+        val stateHolder = rememberSaveableStateHolder()
         Box(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            when (tab) {
+            stateHolder.SaveableStateProvider(tab.toString()) {
+                when (tab) {
                 0 -> HomeScreen(
                     settings = library.settings,
                     currentSongKey = playerState.song?.key,
@@ -189,6 +192,7 @@ fun AppRoot() {
                     onDownload = { startDownload(it) },
                     onToast = { toast(it) }
                 )
+                }
             }
         }
     }

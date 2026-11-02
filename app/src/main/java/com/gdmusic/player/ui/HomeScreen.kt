@@ -72,11 +72,18 @@ fun HomeScreen(
     val listState = rememberLazyListState()
 
     var query by rememberSaveable { mutableStateOf("") }
-    var results by remember { mutableStateOf<List<Song>>(emptyList()) }
+    val gson = remember { com.google.gson.Gson() }
+    val songsSaver = androidx.compose.runtime.saveable.listSaver<List<Song>, String>(
+        save = { songs -> songs.map { gson.toJson(it) } },
+        restore = { saved -> saved.map { gson.fromJson(it, Song::class.java) } }
+    )
+    var results by rememberSaveable(stateSaver = songsSaver) {
+        mutableStateOf(emptyList<Song>())
+    }
     var listTitle by rememberSaveable { mutableStateOf("网易云热歌榜") }
     var loading by remember { mutableStateOf(false) }
-    var page by remember { mutableIntStateOf(1) }
-    var hasMore by remember { mutableStateOf(false) }
+    var page by rememberSaveable { mutableIntStateOf(1) }
+    var hasMore by rememberSaveable { mutableStateOf(false) }
 
     suspend fun loadHot() {
         loading = true
