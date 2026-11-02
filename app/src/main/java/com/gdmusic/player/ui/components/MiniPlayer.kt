@@ -33,6 +33,7 @@ fun MiniPlayer(
     state: PlayerState,
     onClick: () -> Unit,
     onToggle: () -> Unit,
+    onPrevious: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -74,6 +75,9 @@ fun MiniPlayer(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+                IconButton(onClick = onPrevious) {
+                    Icon(AppIcons.SkipPrevious, contentDescription = "上一首")
                 }
                 IconButton(onClick = onToggle) {
                     Icon(

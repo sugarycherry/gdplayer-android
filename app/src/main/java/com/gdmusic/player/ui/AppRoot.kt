@@ -107,6 +107,7 @@ fun AppRoot() {
                         state = playerState,
                         onClick = { playerOpen = true },
                         onToggle = { PlayerConnection.toggle() },
+                        onPrevious = { PlayerConnection.previous() },
                         onNext = { PlayerConnection.next() }
                     )
                 }
