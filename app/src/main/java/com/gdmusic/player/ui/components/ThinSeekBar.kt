@@ -1,0 +1,90 @@
+package com.gdmusic.player.ui.components
+
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun ThinSeekBar(
+    progress: Float,
+    onSeek: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    activeColor: Color = Color.White,
+    inactiveColor: Color = Color.White.copy(alpha = 0.28f)
+) {
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    val shown = (dragging ?: progress).coerceIn(0f, 1f)
+
+    fun positionToProgress(x: Float, width: Float): Float {
+        if (width <= 0f) return 0f
+        val radius = width * 0.02f
+        return ((x - radius) / (width - radius * 2)).coerceIn(0f, 1f)
+    }
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(34.dp)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        dragging = positionToProgress(offset.x, size.width.toFloat())
+                    },
+                    onDrag = { change, _ ->
+                        change.consume()
+                        dragging = positionToProgress(change.position.x, size.width.toFloat())
+                    },
+                    onDragEnd = {
+                        dragging?.let { onSeek(it) }
+                        dragging = null
+                    },
+                    onDragCancel = { dragging = null }
+                )
+            }
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    onSeek(positionToProgress(offset.x, size.width.toFloat()))
+                }
+            }
+    ) {
+        val lineHeight = 3.dp.toPx()
+        val dotRadius = 5.dp.toPx()
+        val centerY = size.height / 2f
+        val startX = dotRadius
+        val endX = size.width - dotRadius
+        val trackWidth = endX - startX
+        val corner = CornerRadius(lineHeight / 2f)
+
+        drawRoundRect(
+            color = inactiveColor,
+            topLeft = Offset(startX, centerY - lineHeight / 2f),
+            size = Size(trackWidth, lineHeight),
+            cornerRadius = corner
+        )
+        drawRoundRect(
+            color = activeColor,
+            topLeft = Offset(startX, centerY - lineHeight / 2f),
+            size = Size(trackWidth * shown, lineHeight),
+            cornerRadius = corner
+        )
+        drawCircle(
+            color = activeColor,
+            radius = dotRadius,
+            center = Offset(startX + trackWidth * shown, centerY)
+        )
+    }
+}

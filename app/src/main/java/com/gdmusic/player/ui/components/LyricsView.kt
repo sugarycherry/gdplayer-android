@@ -22,7 +22,11 @@ import com.gdmusic.player.data.LyricLine
 fun LyricsView(
     lines: List<LyricLine>,
     positionMs: Long,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    activeColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
+    inactiveColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    textStyle: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyLarge,
+    translationStyle: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodySmall
 ) {
     val listState = rememberLazyListState()
     val activeIndex = remember(lines, positionMs) {
@@ -64,17 +68,16 @@ fun LyricsView(
             ) {
                 Text(
                     text = line.text,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = textStyle,
                     fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
-                    color = if (active) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (active) activeColor else inactiveColor,
                     textAlign = TextAlign.Center
                 )
                 if (!line.translation.isNullOrBlank()) {
                     Text(
                         text = line.translation,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = translationStyle,
+                        color = inactiveColor,
                         textAlign = TextAlign.Center
                     )
                 }

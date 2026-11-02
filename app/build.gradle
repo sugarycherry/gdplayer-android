@@ -16,7 +16,7 @@ if (localPropsFile.exists()) {
     localPropsFile.withInputStream { localProps.load(it) }
 }
 
-def appVersion = project.findProperty("appVersionName") ?: "1.0.7"
+def appVersion = project.findProperty("appVersionName") ?: "1.0.8"
 
 android {
     namespace 'com.gdmusic.player'
@@ -26,7 +26,7 @@ android {
         applicationId 'com.gdmusic.player'
         minSdk 26
         targetSdk 34
-        versionCode 8
+        versionCode 9
         versionName appVersion
         vectorDrawables { useSupportLibrary true }
         buildConfigField "String", "APP_VERSION", "\"$appVersion\""
