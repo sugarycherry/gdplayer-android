@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -126,6 +127,7 @@ fun PlayerScreen(
     val coverUrl = CoverUrls.get(song.key) ?: song.coverUrl
     val onDark = Color.White
     val onDarkSecondary = Color.White.copy(alpha = 0.72f)
+    val lyricScale = (LocalConfiguration.current.screenWidthDp / 400f).coerceIn(0.85f, 1.25f)
     val silentInteraction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
 
     Box(
@@ -255,27 +257,32 @@ fun PlayerScreen(
                         modifier = Modifier.fillMaxSize(),
                         activeColor = onDark,
                         inactiveColor = onDarkSecondary,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
-                        translationStyle = MaterialTheme.typography.bodySmall
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = (18f * lyricScale).sp
+                        ),
+                        translationStyle = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = (13f * lyricScale).sp
+                        )
                     )
                 } else {
                     BoxWithConstraints(Modifier.fillMaxSize()) {
-                        val discSize = minOf(maxWidth * 0.82f, maxHeight * 0.66f)
+                        val discSize = minOf(maxWidth * 0.86f, maxHeight * 0.70f)
+                        val blockScale = (maxWidth.value / 400f).coerceIn(0.85f, 1.25f)
                         Column(
                             Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.weight(0.42f))
+                            Spacer(Modifier.weight(1f))
                             VinylDisc(
                                 song = song,
                                 playing = state.isPlaying,
                                 modifier = Modifier.size(discSize)
                             )
-                            Spacer(Modifier.weight(0.28f))
+                            Spacer(Modifier.height(18.dp))
                             Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .heightIn(min = 86.dp)
+                                    .heightIn(min = 88.dp)
                                     .padding(horizontal = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
@@ -284,19 +291,19 @@ fun PlayerScreen(
                                     Text(
                                         text = prevLyric,
                                         style = MaterialTheme.typography.bodySmall,
-                                        fontSize = 13.sp,
+                                        fontSize = (13f * blockScale).sp,
                                         color = onDarkSecondary.copy(alpha = 0.62f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center
                                     )
-                                    Spacer(Modifier.height(5.dp))
+                                    Spacer(Modifier.height(6.dp))
                                 }
                                 if (currentLyric.isNotBlank()) {
                                     Text(
                                         text = currentLyric,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontSize = 16.sp,
+                                        fontSize = (17f * blockScale).sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onDark,
                                         maxLines = 2,
@@ -305,11 +312,11 @@ fun PlayerScreen(
                                     )
                                 }
                                 if (nextLyric.isNotBlank()) {
-                                    Spacer(Modifier.height(5.dp))
+                                    Spacer(Modifier.height(6.dp))
                                     Text(
                                         text = nextLyric,
                                         style = MaterialTheme.typography.bodySmall,
-                                        fontSize = 13.sp,
+                                        fontSize = (13f * blockScale).sp,
                                         color = onDarkSecondary.copy(alpha = 0.62f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
@@ -317,6 +324,7 @@ fun PlayerScreen(
                                     )
                                 }
                             }
+                            Spacer(Modifier.weight(0.45f))
                         }
                     }
                 }

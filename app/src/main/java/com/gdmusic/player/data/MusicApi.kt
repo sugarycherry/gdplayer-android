@@ -271,4 +271,9 @@ object MusicApi {
         url.startsWith("//") -> "https:$url"
         else -> url
     }
+
+    fun clearCaches() {
+        searchCache.clear()
+        coverCache.clear()
+    }
 }

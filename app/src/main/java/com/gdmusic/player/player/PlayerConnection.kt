@@ -307,4 +307,9 @@ object CoverUrls {
         if (pending.size > 40) pending.removeFirst()
         return true
     }
+
+    fun clear() {
+        map.clear()
+        pending.clear()
+    }
 }

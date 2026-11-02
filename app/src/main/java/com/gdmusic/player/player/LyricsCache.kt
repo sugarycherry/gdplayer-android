@@ -26,4 +26,8 @@ object LyricsCache {
         if (key.isNullOrBlank()) return
         map[key] = lines
     }
+
+    fun clear() {
+        map.clear()
+    }
 }

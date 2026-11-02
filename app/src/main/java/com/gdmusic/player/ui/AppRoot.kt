@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gdmusic.player.BuildConfig
+import com.gdmusic.player.data.CacheCleaner
 import com.gdmusic.player.data.Quality
 import com.gdmusic.player.data.Settings
 import com.gdmusic.player.data.Song
@@ -256,6 +257,12 @@ fun AppRoot() {
             onCheckUpdate = {
                 settingsOpen = false
                 checkUpdate(silent = false)
+            },
+            onClearCache = {
+                scope.launch {
+                    val freed = CacheCleaner.clear(context)
+                    toast("已清理 ${CacheCleaner.format(freed)} 缓存")
+                }
             }
         )
     }
@@ -355,9 +362,18 @@ private fun SettingsDialog(
     settings: Settings,
     onDismiss: () -> Unit,
     onSave: (Settings) -> Unit,
-    onCheckUpdate: () -> Unit
+    onCheckUpdate: () -> Unit,
+    onClearCache: () -> Unit
 ) {
+    val context = LocalContext.current
     var local by remember { mutableStateOf(settings) }
+    var cacheSize by remember { mutableStateOf(-1L) }
+
+    LaunchedEffect(Unit) {
+        cacheSize = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            CacheCleaner.size(context)
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -385,6 +401,23 @@ private fun SettingsDialog(
                 }
                 SettingSwitch("深色主题", local.darkTheme) {
                     local = local.copy(darkTheme = it)
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onClearCache()
+                            cacheSize = 0L
+                        }
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("清理缓存", modifier = Modifier.weight(1f))
+                    Text(
+                        text = if (cacheSize < 0) "" else CacheCleaner.format(cacheSize),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
