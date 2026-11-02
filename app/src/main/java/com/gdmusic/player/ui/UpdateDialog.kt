@@ -1,5 +1,6 @@
 package com.gdmusic.player.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,7 +32,8 @@ fun UpdateDialog(
     info: UpdateInfo,
     currentVersion: String,
     onDismiss: () -> Unit,
-    onToast: (String) -> Unit
+    onToast: (String) -> Unit,
+    onOpenPage: (String) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -55,7 +57,21 @@ fun UpdateDialog(
                 if (info.notes.isNotBlank()) {
                     Spacer(Modifier.height(8.dp))
                     Text(info.notes.trim(), style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "版本信息来自 GitHub 发布页，详细更新说明请见发布页。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "下载失败？点这里用浏览器打开",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { onOpenPage(info.pageUrl) }
+                )
                 if (downloading) {
                     Spacer(Modifier.height(14.dp))
                     LinearProgressIndicator(

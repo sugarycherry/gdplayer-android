@@ -46,6 +46,7 @@ import com.gdmusic.player.data.Song
 import com.gdmusic.player.data.Store
 import com.gdmusic.player.data.UpdateChecker
 import com.gdmusic.player.data.UpdateInfo
+import com.gdmusic.player.data.UpdateResult
 import com.gdmusic.player.download.Downloader
 import com.gdmusic.player.player.PlayerConnection
 import com.gdmusic.player.ui.components.AddToPlaylistDialog
@@ -65,6 +66,7 @@ fun AppRoot() {
     var settingsOpen by remember { mutableStateOf(false) }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
     var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var updateError by remember { mutableStateOf<String?>(null) }
     var checkingUpdate by remember { mutableStateOf(false) }
     var pendingSearch by remember { mutableStateOf<String?>(null) }
     var queueOpen by remember { mutableStateOf(false) }
@@ -77,13 +79,33 @@ fun AppRoot() {
         if (checkingUpdate) return
         checkingUpdate = true
         scope.launch {
-            val info = UpdateChecker.latest()
+            val result = UpdateChecker.latest()
             checkingUpdate = false
-            when {
-                info == null -> if (!silent) toast("检查更新失败，请检查网络")
-                UpdateChecker.isNewer(info.version, BuildConfig.APP_VERSION) -> updateInfo = info
-                else -> if (!silent) toast("已是最新版本 ${BuildConfig.APP_VERSION}")
+            when (result) {
+                is UpdateResult.Found -> {
+                    if (UpdateChecker.isNewer(result.info.version, BuildConfig.APP_VERSION)) {
+                        updateInfo = result.info
+                    } else if (!silent) {
+                        toast("已是最新版本 ${BuildConfig.APP_VERSION}")
+                    }
+                }
+                is UpdateResult.Failed -> {
+                    if (!silent) updateError = result.reason
+                }
             }
+        }
+    }
+
+    fun openInBrowser(url: String) {
+        try {
+            context.startActivity(
+                android.content.Intent(
+                    android.content.Intent.ACTION_VIEW,
+                    android.net.Uri.parse(url)
+                ).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (e: Exception) {
+            toast("无法打开浏览器")
         }
     }
 
@@ -223,7 +245,37 @@ fun AppRoot() {
             info = info,
             currentVersion = BuildConfig.APP_VERSION,
             onDismiss = { updateInfo = null },
-            onToast = { toast(it) }
+            onToast = { toast(it) },
+            onOpenPage = { openInBrowser(it.ifBlank { UpdateChecker.releasePageUrl() }) }
+        )
+    }
+
+    updateError?.let { reason ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { updateError = null },
+            title = { Text("检查更新失败") },
+            text = {
+                Text(
+                    "原因：$reason\n\n" +
+                        "可以直接到 GitHub 发布页用浏览器下载最新安装包。"
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        updateError = null
+                        openInBrowser(UpdateChecker.releasePageUrl())
+                    }
+                ) { Text("在浏览器打开") }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        updateError = null
+                        checkUpdate(silent = false)
+                    }
+                ) { Text("重试") }
+            }
         )
     }
 
