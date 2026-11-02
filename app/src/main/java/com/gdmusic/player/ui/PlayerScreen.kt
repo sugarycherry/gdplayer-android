@@ -222,6 +222,7 @@ fun PlayerScreen(
 
             val lyricIndex = if (lyrics.isEmpty()) -1
             else lyrics.indexOfLast { it.timeMs <= state.positionMs }
+            val prevLyric = lyrics.getOrNull(lyricIndex - 1)?.text.orEmpty()
             val currentLyric = lyrics.getOrNull(lyricIndex)?.text.orEmpty()
             val nextLyric = lyrics.getOrNull(lyricIndex + 1)?.text.orEmpty()
 
@@ -242,7 +243,7 @@ fun PlayerScreen(
                         modifier = Modifier.fillMaxSize(),
                         activeColor = onDark,
                         inactiveColor = onDarkSecondary,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 17.sp),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp),
                         translationStyle = MaterialTheme.typography.bodySmall
                     )
                 } else {
@@ -266,12 +267,25 @@ fun PlayerScreen(
                             Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 14.dp, start = 8.dp, end = 8.dp),
+                                    .padding(bottom = 6.dp, start = 8.dp, end = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
+                                if (prevLyric.isNotBlank()) {
+                                    Text(
+                                        text = prevLyric,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontSize = 13.sp,
+                                        color = onDarkSecondary.copy(alpha = 0.62f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Spacer(Modifier.height(5.dp))
+                                }
                                 Text(
                                     text = currentLyric,
                                     style = MaterialTheme.typography.bodyMedium,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = onDark,
                                     maxLines = 2,
@@ -279,11 +293,12 @@ fun PlayerScreen(
                                     textAlign = TextAlign.Center
                                 )
                                 if (nextLyric.isNotBlank()) {
-                                    Spacer(Modifier.height(4.dp))
+                                    Spacer(Modifier.height(5.dp))
                                     Text(
                                         text = nextLyric,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = onDarkSecondary,
+                                        fontSize = 13.sp,
+                                        color = onDarkSecondary.copy(alpha = 0.62f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center
@@ -411,6 +426,7 @@ fun PlayerScreen(
                     Icon(AppIcons.QueueMusic, contentDescription = "播放列表", tint = onDark)
                 }
             }
+            Spacer(Modifier.height(18.dp))
         }
     }
 }
