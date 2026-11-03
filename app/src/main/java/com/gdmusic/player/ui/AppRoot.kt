@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -288,14 +287,7 @@ fun AppRoot() {
         SettingsDialog(
             settings = library.settings,
             onDismiss = { settingsOpen = false },
-            onSave = { next ->
-                val baseChanged = next.apiBase != Store.state.value.settings.apiBase
-                Store.saveSettings(
-                    if (baseChanged) next.copy(sourcesProbed = false)
-                    else next
-                )
-                if (baseChanged) probeSources(verbose = false)
-            },
+            onSave = { Store.saveSettings(it) },
             onCheckUpdate = {
                 settingsOpen = false
                 checkUpdate(silent = false)
@@ -412,7 +404,6 @@ private fun SettingsDialog(
     val context = LocalContext.current
     var local by remember { mutableStateOf(settings) }
     var cacheSize by remember { mutableStateOf(-1L) }
-    var apiBaseText by remember { mutableStateOf(settings.apiBase) }
     var probing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -451,28 +442,11 @@ private fun SettingsDialog(
                     local = local.copy(darkTheme = it)
                 }
                 Spacer(Modifier.height(10.dp))
-                Text("接口地址", style = MaterialTheme.typography.titleSmall)
-                OutlinedTextField(
-                    value = apiBaseText,
-                    onValueChange = { apiBaseText = it },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodySmall,
-                    placeholder = {
-                        Text(MusicSources.DEFAULT_API, style = MaterialTheme.typography.bodySmall)
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    "留空用默认地址。腾讯/酷我/潮汐等源需要自建接口，把地址填在这里即可。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
                 Row(
                     Modifier
                         .fillMaxWidth()
                         .clickable(enabled = !probing) {
                             probing = true
-                            onSave(local.copy(apiBase = apiBaseText.trim()))
                             onProbeSources()
                         }
                         .padding(vertical = 10.dp),
@@ -511,7 +485,7 @@ private fun SettingsDialog(
                 )
                 TextButton(
                     onClick = {
-                        onSave(local.copy(apiBase = apiBaseText.trim()))
+                        onSave(local)
                         onCheckUpdate()
                     }
                 ) {
@@ -521,7 +495,7 @@ private fun SettingsDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                onSave(local.copy(apiBase = apiBaseText.trim()))
+                onSave(local)
                 onDismiss()
             }) { Text("完成") }
         },

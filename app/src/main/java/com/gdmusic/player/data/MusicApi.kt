@@ -9,7 +9,6 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
@@ -17,9 +16,6 @@ import java.util.concurrent.TimeUnit
 object MusicApi {
 
     private const val USER_AGENT = "GDPlayer/1.0 (Android)"
-
-    private fun baseUrl(): String =
-        Store.state.value.settings.apiBase.ifBlank { MusicSources.DEFAULT_API }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -46,7 +42,7 @@ object MusicApi {
     private var lastCoverRequestAt = 0L
 
     private fun url(vararg params: Pair<String, String>): HttpUrl {
-        val builder = (baseUrl().toHttpUrlOrNull() ?: MusicSources.DEFAULT_API.toHttpUrl()).newBuilder()
+        val builder = MusicSources.DEFAULT_API.toHttpUrl().newBuilder()
         params.forEach { builder.addQueryParameter(it.first, it.second) }
         return builder.build()
     }

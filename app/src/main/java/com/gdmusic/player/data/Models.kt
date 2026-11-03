@@ -55,7 +55,6 @@ data class Settings(
     val bitrate: Int = 320,
     val autoSource: Boolean = true,
     val darkTheme: Boolean = true,
-    val apiBase: String = "",
     val availableSources: List<String> = emptyList(),
     val sourcesProbed: Boolean = false
 )

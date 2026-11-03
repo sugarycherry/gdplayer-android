@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.gdmusic.player.data.CoverTheme
 import com.gdmusic.player.data.LrcParser
 import com.gdmusic.player.data.LyricLine
 import com.gdmusic.player.data.MusicApi
@@ -130,6 +131,17 @@ fun PlayerScreen(
     val lyricScale = (LocalConfiguration.current.screenWidthDp / 400f).coerceIn(0.85f, 1.25f)
     val silentInteraction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
 
+    var themeColor by remember(song.key) { mutableStateOf(Color(0xFF24242A)) }
+    LaunchedEffect(song.key, coverUrl) {
+        CoverTheme.of(context, coverUrl)?.let { themeColor = Color(it) }
+    }
+    val tint by androidx.compose.animation.animateColorAsState(
+        targetValue = themeColor,
+        animationSpec = androidx.compose.animation.core.tween(650),
+        label = "themeTint"
+    )
+    val tintDeep = Color(tint.red * 0.55f, tint.green * 0.55f, tint.blue * 0.55f, 1f)
+
     Box(
         Modifier
             .fillMaxSize()
@@ -138,7 +150,17 @@ fun PlayerScreen(
                 indication = null
             ) { }
     ) {
-        Box(Modifier.fillMaxSize().background(Color(0xFF141416)))
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(tint, tintDeep, Color(0xFF0A0A0C)),
+                        startY = 0f,
+                        endY = 1400f
+                    )
+                )
+        )
         if (!coverUrl.isNullOrBlank()) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -147,9 +169,10 @@ fun PlayerScreen(
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
+                alpha = 0.55f,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(56.dp)
+                    .blur(72.dp)
             )
         }
         Box(
@@ -158,9 +181,10 @@ fun PlayerScreen(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            Color.Black.copy(alpha = 0.38f),
-                            Color.Black.copy(alpha = 0.62f),
-                            Color.Black.copy(alpha = 0.88f)
+                            tint.copy(alpha = 0.30f),
+                            Color.Black.copy(alpha = 0.18f),
+                            Color.Black.copy(alpha = 0.42f),
+                            Color.Black.copy(alpha = 0.72f)
                         )
                     )
                 )
@@ -235,9 +259,7 @@ fun PlayerScreen(
 
             val lyricIndex = if (lyrics.isEmpty()) -1
             else lyrics.indexOfLast { it.timeMs <= state.positionMs }
-            val prevLyric = lyrics.getOrNull(lyricIndex - 1)?.text.orEmpty()
             val currentLyric = lyrics.getOrNull(lyricIndex)?.text.orEmpty()
-            val nextLyric = lyrics.getOrNull(lyricIndex + 1)?.text.orEmpty()
 
             Box(
                 Modifier
@@ -265,7 +287,7 @@ fun PlayerScreen(
                     )
                 } else {
                     BoxWithConstraints(Modifier.fillMaxSize()) {
-                        val discSize = minOf(maxWidth * 0.86f, maxHeight * 0.70f)
+                        val discSize = minOf(maxWidth * 0.92f, maxHeight * 0.76f)
                         val blockScale = (maxWidth.value / 400f).coerceIn(0.85f, 1.25f)
                         Column(
                             Modifier.fillMaxSize(),
@@ -281,43 +303,19 @@ fun PlayerScreen(
                             Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .heightIn(min = 112.dp)
+                                    .heightIn(min = 70.dp)
                                     .padding(horizontal = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                if (prevLyric.isNotBlank()) {
-                                    Text(
-                                        text = prevLyric,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontSize = (16f * blockScale).sp,
-                                        color = onDarkSecondary.copy(alpha = 0.62f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center
-                                    )
-                                    Spacer(Modifier.height(8.dp))
-                                }
                                 if (currentLyric.isNotBlank()) {
                                     Text(
                                         text = currentLyric,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontSize = (22f * blockScale).sp,
+                                        fontSize = (27f * blockScale).sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onDark,
                                         maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                                if (nextLyric.isNotBlank()) {
-                                    Spacer(Modifier.height(8.dp))
-                                    Text(
-                                        text = nextLyric,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontSize = (16f * blockScale).sp,
-                                        color = onDarkSecondary.copy(alpha = 0.62f),
-                                        maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center
                                     )
@@ -341,24 +339,28 @@ fun PlayerScreen(
                     Text(
                         text = song.name,
                         style = MaterialTheme.typography.titleLarge,
+                        fontSize = (21f * lyricScale).sp,
                         fontWeight = FontWeight.Bold,
                         color = onDark,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.clickable { onOpenQueue() }
                     )
-                    Spacer(Modifier.height(3.dp))
+                    Spacer(Modifier.height(4.dp))
                     Text(
                         text = song.displayArtist,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontSize = (15f * lyricScale).sp,
                         color = onDarkSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.clickable {
-                            val keyword = song.artist.substringBefore("/").trim()
-                                .ifBlank { song.displayArtist }
-                            onSearchArtist(keyword)
-                        }
+                        modifier = Modifier
+                            .clickable {
+                                val keyword = song.artist.substringBefore("/").trim()
+                                    .ifBlank { song.displayArtist }
+                                onSearchArtist(keyword)
+                            }
+                            .padding(vertical = 6.dp)
                     )
                 }
                 IconButton(

@@ -18,10 +18,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +51,7 @@ import com.gdmusic.player.ui.components.CoverImage
 import com.gdmusic.player.ui.components.SongRow
 import kotlinx.coroutines.launch
 
-private val tabTitles = listOf("我喜欢的音乐", "收藏", "歌单")
+private val tabTitles = listOf("收藏", "历史", "歌单")
 
 @Composable
 fun LibraryScreen(
@@ -68,34 +67,13 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var openedId by rememberSaveable { mutableStateOf<String?>(null) }
-    var historyOpen by rememberSaveable { mutableStateOf(false) }
     var creating by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
     var importing by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf("") }
     var importLoading by remember { mutableStateOf(false) }
 
-    val importedPlaylist = library.playlists.firstOrNull { it.source == "netease" }
     val opened = library.playlists.firstOrNull { it.id == openedId }
-
-    if (historyOpen) {
-        LibraryDetail(
-            title = "历史播放",
-            songs = library.history,
-            favorites = library.favorites,
-            currentSongKey = currentSongKey,
-            onBack = { historyOpen = false },
-            onPlay = onPlay,
-            onPlayNext = onPlayNext,
-            onAddToQueue = onAddToQueue,
-            onAddToPlaylist = onAddToPlaylist,
-            onDownload = onDownload,
-            onToast = onToast,
-            actionText = "清空",
-            onAction = { Store.clearHistory() }
-        )
-        return
-    }
 
     if (opened != null) {
         LibraryDetail(
@@ -176,52 +154,6 @@ fun LibraryScreen(
 
         when (tab) {
             0 -> {
-                if (importedPlaylist == null || importedPlaylist.songs.isEmpty()) {
-                    EmptyHint("还没有导入网易云歌单，去「歌单」里点下载图标导入")
-                } else {
-                    Column(Modifier.fillMaxSize()) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${importedPlaylist.songs.size} 首",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.weight(1f)
-                            )
-                            TextButton(onClick = {
-                                val added = Store.addAllToFavorites(importedPlaylist.songs)
-                                onToast(
-                                    if (added == 0) "这些歌都已经收藏过了"
-                                    else "已收藏 $added 首"
-                                )
-                            }) {
-                                Text("一键收藏")
-                            }
-                            TextButton(onClick = { onPlay(importedPlaylist.songs, 0) }) {
-                                Text("全部播放")
-                            }
-                        }
-                        SongList(
-                            songs = importedPlaylist.songs,
-                            favorites = library.favorites,
-                            currentSongKey = currentSongKey,
-                            onPlay = onPlay,
-                            onPlayNext = onPlayNext,
-                            onAddToQueue = onAddToQueue,
-                            onAddToPlaylist = onAddToPlaylist,
-                            onDownload = onDownload,
-                            onToast = onToast,
-                            onRemove = { song -> Store.removeFromPlaylist(importedPlaylist.id, song.key) }
-                        )
-                    }
-                }
-            }
-
-            1 -> {
                 if (library.favorites.isEmpty()) {
                     EmptyHint("还没有收藏的歌曲")
                 } else {
@@ -239,21 +171,55 @@ fun LibraryScreen(
                 }
             }
 
+            1 -> {
+                if (library.history.isEmpty()) {
+                    EmptyHint("还没有播放记录")
+                } else {
+                    Column(Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 20.dp, end = 20.dp, top = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${library.history.size} 首",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(onClick = { Store.clearHistory() }) {
+                                Text("清空")
+                            }
+                        }
+                        SongList(
+                            songs = library.history,
+                            favorites = library.favorites,
+                            currentSongKey = currentSongKey,
+                            onPlay = onPlay,
+                            onPlayNext = onPlayNext,
+                            onAddToQueue = onAddToQueue,
+                            onAddToPlaylist = onAddToPlaylist,
+                            onDownload = onDownload,
+                            onToast = onToast
+                        )
+                    }
+                }
+            }
+
             else -> {
                 LazyColumn(Modifier.fillMaxSize()) {
-                    item(key = "history") {
-                        ListEntry(
-                            title = "历史播放",
-                            subtitle = "${library.history.size} 首",
-                            leadingSong = library.history.firstOrNull(),
-                            onClick = { historyOpen = true }
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    }
                     itemsIndexed(library.playlists, key = { _, p -> p.id }) { _, playlist ->
                         PlaylistEntry(
                             playlist = playlist,
                             onClick = { openedId = playlist.id },
+                            onFavoriteAll = {
+                                val added = Store.addAllToFavorites(playlist.songs)
+                                onToast(
+                                    if (added == 0) "这些歌都已经收藏过了"
+                                    else "已收藏 $added 首"
+                                )
+                            },
                             onDelete = { Store.deletePlaylist(playlist.id) }
                         )
                     }
@@ -470,45 +436,10 @@ private fun LibraryDetail(
 }
 
 @Composable
-private fun ListEntry(
-    title: String,
-    subtitle: String,
-    leadingSong: Song?,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        CoverImage(
-            song = leadingSong,
-            modifier = Modifier.size(46.dp),
-            shape = RoundedCornerShape(8.dp)
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Icon(
-            Icons.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-@Composable
 private fun PlaylistEntry(
     playlist: UserPlaylist,
     onClick: () -> Unit,
+    onFavoriteAll: () -> Unit,
     onDelete: () -> Unit
 ) {
     Row(
@@ -530,6 +461,13 @@ private fun PlaylistEntry(
                 "${playlist.songs.size} 首",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onFavoriteAll) {
+            Icon(
+                Icons.Filled.FavoriteBorder,
+                contentDescription = "一键收藏",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         IconButton(onClick = onDelete) {
