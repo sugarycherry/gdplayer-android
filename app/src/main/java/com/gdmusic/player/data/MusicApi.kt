@@ -9,14 +9,17 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
 object MusicApi {
 
-    private const val BASE = "https://music-api.gdstudio.xyz/api.php"
     private const val USER_AGENT = "GDPlayer/1.0 (Android)"
+
+    private fun baseUrl(): String =
+        Store.state.value.settings.apiBase.ifBlank { MusicSources.DEFAULT_API }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -43,9 +46,28 @@ object MusicApi {
     private var lastCoverRequestAt = 0L
 
     private fun url(vararg params: Pair<String, String>): HttpUrl {
-        val builder = BASE.toHttpUrl().newBuilder()
+        val builder = (baseUrl().toHttpUrlOrNull() ?: MusicSources.DEFAULT_API.toHttpUrl()).newBuilder()
         params.forEach { builder.addQueryParameter(it.first, it.second) }
         return builder.build()
+    }
+
+    suspend fun probeSources(): List<String> = withContext(Dispatchers.IO) {
+        val working = mutableListOf<String>()
+        for (option in MusicSources.all) {
+            val raw = get(
+                url(
+                    "types" to "search",
+                    "source" to option.key,
+                    "name" to "love",
+                    "count" to "1"
+                )
+            )
+            if (raw != null && raw.trimStart().startsWith("[") && !raw.contains("not supported")) {
+                working.add(option.key)
+            }
+            kotlinx.coroutines.delay(80)
+        }
+        working
     }
 
     private fun get(url: HttpUrl): String? {

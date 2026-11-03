@@ -54,7 +54,10 @@ data class Settings(
     val source: String = "netease",
     val bitrate: Int = 320,
     val autoSource: Boolean = true,
-    val darkTheme: Boolean = true
+    val darkTheme: Boolean = true,
+    val apiBase: String = "",
+    val availableSources: List<String> = emptyList(),
+    val sourcesProbed: Boolean = false
 )
 
 data class LibraryState(
@@ -67,14 +70,32 @@ data class LibraryState(
 )
 
 object MusicSources {
-    val supported = listOf(
+    const val DEFAULT_API = "https://music-api.gdstudio.xyz/api.php"
+
+    val all = listOf(
         SourceOption("netease", "网易云"),
+        SourceOption("tencent", "腾讯"),
+        SourceOption("kuwo", "酷我"),
+        SourceOption("tidal", "潮汐"),
+        SourceOption("qobuz", "Qobuz"),
+        SourceOption("joox", "JOOX"),
         SourceOption("bilibili", "B站"),
-        SourceOption("joox", "JOOX")
+        SourceOption("apple", "Apple"),
+        SourceOption("ytmusic", "YouTube"),
+        SourceOption("spotify", "Spotify")
     )
 
+    val fallback = listOf("netease", "bilibili", "joox")
+
+    fun options(enabled: List<String>): List<SourceOption> {
+        val keys = if (enabled.isEmpty()) fallback else enabled
+        return all.filter { keys.contains(it.key) }.ifEmpty {
+            all.filter { fallback.contains(it.key) }
+        }
+    }
+
     fun label(key: String): String =
-        supported.firstOrNull { it.key == key }?.label ?: key
+        all.firstOrNull { it.key == key }?.label ?: key
 }
 
 data class SourceOption(val key: String, val label: String)

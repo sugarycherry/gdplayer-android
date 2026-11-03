@@ -138,6 +138,7 @@ fun PlayerScreen(
                 indication = null
             ) { }
     ) {
+        Box(Modifier.fillMaxSize().background(Color(0xFF141416)))
         if (!coverUrl.isNullOrBlank()) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
@@ -150,8 +151,6 @@ fun PlayerScreen(
                     .fillMaxSize()
                     .blur(56.dp)
             )
-        } else {
-            Box(Modifier.fillMaxSize().background(Color(0xFF1B1B1E)))
         }
         Box(
             Modifier
@@ -159,9 +158,9 @@ fun PlayerScreen(
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            Color.Black.copy(alpha = 0.32f),
-                            Color.Black.copy(alpha = 0.55f),
-                            Color.Black.copy(alpha = 0.82f)
+                            Color.Black.copy(alpha = 0.38f),
+                            Color.Black.copy(alpha = 0.62f),
+                            Color.Black.copy(alpha = 0.88f)
                         )
                     )
                 )

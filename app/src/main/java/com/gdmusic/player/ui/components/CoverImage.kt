@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -29,7 +30,9 @@ import com.gdmusic.player.player.CoverUrls
 fun CoverImage(
     song: Song?,
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(8.dp)
+    shape: Shape = RoundedCornerShape(8.dp),
+    placeholderColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    placeholderTint: Color = MaterialTheme.colorScheme.onSurfaceVariant
 ) {
     var url by remember(song?.key) {
         mutableStateOf(song?.let { CoverUrls.get(it.key) })
@@ -46,7 +49,7 @@ fun CoverImage(
     Box(
         modifier = modifier
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(placeholderColor),
         contentAlignment = Alignment.Center
     ) {
         if (url != null) {
@@ -63,7 +66,7 @@ fun CoverImage(
             Icon(
                 imageVector = com.gdmusic.player.ui.AppIcons.MusicNote,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = placeholderTint,
                 modifier = Modifier.fillMaxSize(0.4f)
             )
         }

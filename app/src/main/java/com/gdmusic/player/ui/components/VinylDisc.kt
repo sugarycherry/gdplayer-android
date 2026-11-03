@@ -75,7 +75,9 @@ fun VinylDisc(
         CoverImage(
             song = song,
             modifier = Modifier.fillMaxSize(0.63f),
-            shape = CircleShape
+            shape = CircleShape,
+            placeholderColor = Color(0xFF1B1B1E),
+            placeholderTint = Color.White.copy(alpha = 0.35f)
         )
     }
 }

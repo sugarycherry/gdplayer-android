@@ -10,15 +10,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -45,6 +49,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gdmusic.player.BuildConfig
 import com.gdmusic.player.data.CacheCleaner
+import com.gdmusic.player.data.MusicApi
+import com.gdmusic.player.data.MusicSources
 import com.gdmusic.player.data.Quality
 import com.gdmusic.player.data.Settings
 import com.gdmusic.player.data.Song
@@ -78,6 +84,29 @@ fun AppRoot() {
 
     fun toast(message: String) {
         scope.launch { snackbarHostState.showSnackbar(message) }
+    }
+
+    fun probeSources(verbose: Boolean) {
+        scope.launch {
+            if (verbose) toast("正在检测可用音源…")
+            val working = MusicApi.probeSources()
+            val current = Store.state.value.settings
+            if (working.isEmpty()) {
+                if (verbose) toast("检测失败，请检查网络或 API 地址")
+            } else {
+                Store.saveSettings(
+                    current.copy(
+                        availableSources = working,
+                        sourcesProbed = true,
+                        source = if (working.contains(current.source)) current.source
+                        else working.first()
+                    )
+                )
+                if (verbose) {
+                    toast("可用音源：" + working.joinToString("、") { MusicSources.label(it) })
+                }
+            }
+        }
     }
 
     fun checkUpdate(silent: Boolean) {
@@ -115,6 +144,12 @@ fun AppRoot() {
     }
 
     LaunchedEffect(Unit) { checkUpdate(silent = true) }
+    LaunchedEffect(Unit) {
+        if (!Store.state.value.settings.sourcesProbed) {
+            kotlinx.coroutines.delay(2500)
+            probeSources(verbose = false)
+        }
+    }
 
     fun startDownload(song: Song) {
         scope.launch {
@@ -253,7 +288,14 @@ fun AppRoot() {
         SettingsDialog(
             settings = library.settings,
             onDismiss = { settingsOpen = false },
-            onSave = { Store.saveSettings(it) },
+            onSave = { next ->
+                val baseChanged = next.apiBase != Store.state.value.settings.apiBase
+                Store.saveSettings(
+                    if (baseChanged) next.copy(sourcesProbed = false)
+                    else next
+                )
+                if (baseChanged) probeSources(verbose = false)
+            },
             onCheckUpdate = {
                 settingsOpen = false
                 checkUpdate(silent = false)
@@ -263,7 +305,8 @@ fun AppRoot() {
                     val freed = CacheCleaner.clear(context)
                     toast("已清理 ${CacheCleaner.format(freed)} 缓存")
                 }
-            }
+            },
+            onProbeSources = { probeSources(verbose = true) }
         )
     }
 
@@ -363,11 +406,14 @@ private fun SettingsDialog(
     onDismiss: () -> Unit,
     onSave: (Settings) -> Unit,
     onCheckUpdate: () -> Unit,
-    onClearCache: () -> Unit
+    onClearCache: () -> Unit,
+    onProbeSources: () -> Unit
 ) {
     val context = LocalContext.current
     var local by remember { mutableStateOf(settings) }
     var cacheSize by remember { mutableStateOf(-1L) }
+    var apiBaseText by remember { mutableStateOf(settings.apiBase) }
+    var probing by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         cacheSize = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -375,11 +421,13 @@ private fun SettingsDialog(
         }
     }
 
+    LaunchedEffect(settings.availableSources) { probing = false }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("设置") },
         text = {
-            Column {
+            Column(Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState())) {
                 Text("音质", style = MaterialTheme.typography.titleSmall)
                 Quality.options.forEach { (br, label) ->
                     Row(
@@ -401,6 +449,42 @@ private fun SettingsDialog(
                 }
                 SettingSwitch("深色主题", local.darkTheme) {
                     local = local.copy(darkTheme = it)
+                }
+                Spacer(Modifier.height(10.dp))
+                Text("接口地址", style = MaterialTheme.typography.titleSmall)
+                OutlinedTextField(
+                    value = apiBaseText,
+                    onValueChange = { apiBaseText = it },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    placeholder = {
+                        Text(MusicSources.DEFAULT_API, style = MaterialTheme.typography.bodySmall)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    "留空用默认地址。腾讯/酷我/潮汐等源需要自建接口，把地址填在这里即可。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !probing) {
+                            probing = true
+                            onSave(local.copy(apiBase = apiBaseText.trim()))
+                            onProbeSources()
+                        }
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("重新检测可用音源", modifier = Modifier.weight(1f))
+                    Text(
+                        text = if (probing) "检测中…"
+                        else "${MusicSources.options(local.availableSources).size} 个可用",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Row(
                     Modifier
@@ -427,7 +511,7 @@ private fun SettingsDialog(
                 )
                 TextButton(
                     onClick = {
-                        onSave(local)
+                        onSave(local.copy(apiBase = apiBaseText.trim()))
                         onCheckUpdate()
                     }
                 ) {
@@ -437,7 +521,7 @@ private fun SettingsDialog(
         },
         confirmButton = {
             TextButton(onClick = {
-                onSave(local)
+                onSave(local.copy(apiBase = apiBaseText.trim()))
                 onDismiss()
             }) { Text("完成") }
         },
