@@ -110,7 +110,15 @@ fun LibraryScreen(
             onAddToPlaylist = onAddToPlaylist,
             onDownload = onDownload,
             onToast = onToast,
-            onRemove = { song -> Store.removeFromPlaylist(opened.id, song.key) }
+            onRemove = { song -> Store.removeFromPlaylist(opened.id, song.key) },
+            actionText = "收藏全部",
+            onAction = {
+                val added = Store.addAllToFavorites(opened.songs)
+                onToast(
+                    if (added == 0) "这些歌都已经收藏过了"
+                    else "已收藏 $added 首"
+                )
+            }
         )
         return
     }
@@ -184,6 +192,15 @@ fun LibraryScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f)
                             )
+                            TextButton(onClick = {
+                                val added = Store.addAllToFavorites(importedPlaylist.songs)
+                                onToast(
+                                    if (added == 0) "这些歌都已经收藏过了"
+                                    else "已收藏 $added 首"
+                                )
+                            }) {
+                                Text("一键收藏")
+                            }
                             TextButton(onClick = { onPlay(importedPlaylist.songs, 0) }) {
                                 Text("全部播放")
                             }

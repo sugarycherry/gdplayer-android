@@ -56,6 +56,16 @@ object Store {
         commit(current.copy(favorites = favorites))
     }
 
+    fun addAllToFavorites(songs: List<Song>): Int {
+        if (songs.isEmpty()) return 0
+        val current = _state.value
+        val existing = current.favorites.mapTo(HashSet()) { it.key }
+        val added = songs.filterNot { existing.contains(it.key) }.distinctBy { it.key }
+        if (added.isEmpty()) return 0
+        commit(current.copy(favorites = added + current.favorites))
+        return added.size
+    }
+
     fun addHistory(song: Song) {
         if (song.key.isBlank()) return
         val current = _state.value
