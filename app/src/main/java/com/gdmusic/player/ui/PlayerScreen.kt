@@ -260,6 +260,7 @@ fun PlayerScreen(
             val lyricIndex = if (lyrics.isEmpty()) -1
             else lyrics.indexOfLast { it.timeMs <= state.positionMs }
             val currentLyric = lyrics.getOrNull(lyricIndex)?.text.orEmpty()
+            val nextLyric = lyrics.getOrNull(lyricIndex + 1)?.text.orEmpty()
 
             Box(
                 Modifier
@@ -287,13 +288,13 @@ fun PlayerScreen(
                     )
                 } else {
                     BoxWithConstraints(Modifier.fillMaxSize()) {
-                        val discSize = minOf(maxWidth * 0.92f, maxHeight * 0.76f)
+                        val discSize = minOf(maxWidth * 0.94f, (maxHeight - 116.dp).coerceAtLeast(120.dp))
                         val blockScale = (maxWidth.value / 400f).coerceIn(0.85f, 1.25f)
                         Column(
                             Modifier.fillMaxSize(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Spacer(Modifier.weight(1f))
+                            Spacer(Modifier.weight(0.6f))
                             VinylDisc(
                                 song = song,
                                 playing = state.isPlaying,
@@ -303,7 +304,7 @@ fun PlayerScreen(
                             Column(
                                 Modifier
                                     .fillMaxWidth()
-                                    .heightIn(min = 70.dp)
+                                    .heightIn(min = 86.dp)
                                     .padding(horizontal = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
@@ -312,7 +313,7 @@ fun PlayerScreen(
                                     Text(
                                         text = currentLyric,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        fontSize = (27f * blockScale).sp,
+                                        fontSize = (22f * blockScale).sp,
                                         fontWeight = FontWeight.SemiBold,
                                         color = onDark,
                                         maxLines = 2,
@@ -320,14 +321,26 @@ fun PlayerScreen(
                                         textAlign = TextAlign.Center
                                     )
                                 }
+                                if (nextLyric.isNotBlank()) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        text = nextLyric,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontSize = (15f * blockScale).sp,
+                                        color = onDarkSecondary.copy(alpha = 0.62f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
                             }
-                            Spacer(Modifier.weight(0.45f))
+                            Spacer(Modifier.weight(1f))
                         }
                     }
                 }
             }
 
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(10.dp))
 
             Box(Modifier.fillMaxWidth()) {
                 Column(
@@ -339,18 +352,18 @@ fun PlayerScreen(
                     Text(
                         text = song.name,
                         style = MaterialTheme.typography.titleLarge,
-                        fontSize = (21f * lyricScale).sp,
+                        fontSize = (23f * lyricScale).sp,
                         fontWeight = FontWeight.Bold,
                         color = onDark,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.clickable { onOpenQueue() }
                     )
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(2.dp))
                     Text(
                         text = song.displayArtist,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontSize = (15f * lyricScale).sp,
+                        fontSize = (17f * lyricScale).sp,
                         color = onDarkSecondary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -401,7 +414,7 @@ fun PlayerScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 6.dp, bottom = 8.dp),
+                    .padding(top = 2.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -447,7 +460,7 @@ fun PlayerScreen(
                     Icon(AppIcons.QueueMusic, contentDescription = "播放列表", tint = onDark)
                 }
             }
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(10.dp))
         }
     }
 }
