@@ -146,15 +146,16 @@ object PlayerConnection {
     }
 
     private fun startTicker() {
-        if (ticker != null) return
+        if (ticker?.isActive == true) return
         ticker = scope.launch {
             while (isActive) {
                 controller?.let { c ->
                     val position = c.currentPosition.coerceAtLeast(0)
-                    if (position != _state.value.positionMs) {
+                    val duration = if (c.duration > 0) c.duration else _state.value.durationMs
+                    if (position != _state.value.positionMs || duration != _state.value.durationMs) {
                         _state.value = _state.value.copy(
                             positionMs = position,
-                            durationMs = if (c.duration > 0) c.duration else _state.value.durationMs
+                            durationMs = duration
                         )
                     }
                 }
@@ -169,13 +170,20 @@ object PlayerConnection {
         queue = songs
         SongRegistry.putAll(songs)
         val index = startIndex.coerceIn(0, songs.lastIndex)
-        _state.value = _state.value.copy(queue = songs, index = index, song = songs[index])
+        _state.value = _state.value.copy(
+            queue = songs,
+            index = index,
+            song = songs[index],
+            positionMs = 0L,
+            durationMs = songs[index].durationMs.coerceAtLeast(0L)
+        )
         Store.setQueue(songs, index)
 
         val items = songs.map { toMediaItem(it) }
         c.setMediaItems(items, index, 0L)
         c.prepare()
         c.play()
+        startTicker()
         prefetchArtwork(index)
     }
 
@@ -217,8 +225,17 @@ object PlayerConnection {
         if (c.currentPosition > 3_000) c.seekTo(0) else c.seekToPreviousMediaItem()
     }
 
-    fun seekTo(positionMs: Long) {
-        controller?.seekTo(positionMs.coerceAtLeast(0))
+    fun seekToFraction(fraction: Float) {
+        val c = controller ?: return
+        val ratio = fraction.coerceIn(0f, 1f)
+        val liveDuration = c.duration
+        val fallback = _state.value.song?.durationMs ?: 0L
+        val total = when {
+            liveDuration > 0 -> liveDuration
+            fallback > 0 -> fallback
+            else -> return
+        }
+        c.seekTo((ratio * total).toLong().coerceIn(0L, total))
     }
 
     fun seekToQueueItem(index: Int) {

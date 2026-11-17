@@ -389,14 +389,15 @@ fun PlayerScreen(
                 }
             }
 
-            val duration = state.durationMs.coerceAtLeast(1L)
-            val sliderValue = (state.positionMs.toFloat() / duration).coerceIn(0f, 1f)
+            val duration = state.durationMs.takeIf { it > 0 }
+                ?: song.durationMs.takeIf { it > 0 }
+                ?: 0L
+            val sliderValue =
+                if (duration > 0) (state.positionMs.toFloat() / duration).coerceIn(0f, 1f) else 0f
 
             ThinSeekBar(
                 progress = sliderValue,
-                onSeek = { fraction ->
-                    PlayerConnection.seekTo((fraction * duration).toLong())
-                }
+                onSeek = { fraction -> PlayerConnection.seekToFraction(fraction) }
             )
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
@@ -405,7 +406,7 @@ fun PlayerScreen(
                     color = onDarkSecondary
                 )
                 Text(
-                    text = formatTime(state.durationMs),
+                    text = formatTime(duration),
                     style = MaterialTheme.typography.labelSmall,
                     color = onDarkSecondary
                 )
